@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客戶資料查詢-國家別</title>
+    <style>
+        #btnToggle{
+            background-color: black;
+            color:rgb(28, 126, 85);
+            font-size: 18px;
+            
+        }
+    </style>
+    <!--後端 jinja2 expression運算靜待資料夾相對目錄-->
+    {% include 'jscstemplates.html' %}
+     
+</head>
+<body>
+    <fieldset id="app">
+        <legend>客戶資料查詢-國家別</legend>
+        <!--使用前端對話盒 進行國家別輸入與查詢非同觸發-->
+        <div>
+            <button id="btnQuery">查詢</button>
+        </div>
+        <div>
+            <button id="btnToggle">說明開關</button>
+        </div>
+        <div id="descr" style="display:none">
+            <div>在對話盒中，輸入國家別內容，觸發[查詢]按鈕可以進行非同步查詢作業。</div>
+            <div>按下[取消]按鈕，則關閉對話盒</div>
+        </div>
+        </div>
+        <!--查詢對話盒區塊-->
+        <div id="dialog" title="客戶查詢-國家別" style="display: none;">
+            <div>
+                <div>國家別</div>
+                <div><input type="text" id="txtCountry"/></div>
+            </div>
+        </div>
+        <!--查詢結果-->
+        <div v-show="isShow">
+            <table class="table table-dark table-hover">
+                <thead>
+                    <th>操作</th>
+                    <th>客戶編號</th>
+                    <th>公司行號</th>
+                    <th>聯絡地址</th>
+                    <th>連絡電話</th>
+                    <th>國家別</th>
+                </thead>
+                <tbody>
+                    <!--使用vue foreach 查詢結果-->
+                    <tr v-for="(item,index) in result">
+                        <td>
+                            <button class="btn btn-primary" v-on:click="btnEditHandler" v-bind:accessKey="index">編輯</button>
+                            <button class="btn btn-danger" v-on:click="btnDelete" v-bind:accessKey="index">刪除</button>
+                        </td>
+                        <td>{[item.customerId]}</td>
+                        <td>{[item.companyName]}</td>
+                        <td>{[item.address]}</td>
+                        <td>{[item.phone]}</td>
+                        <td>{[item.country]}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </fieldset>
+    <!--使用jQuery聆聽網頁下載完成之後 進行網頁初始化作業-->
+    <script>
+        //使用jQuery Selector 挑選網頁物件Document 下載完成之後引發事件(jQuery定義.xxx(事件程序崁入) )
+        //ready() 網頁下載完成事件點
+        $(document).ready(
+            //事件程序
+            function(e){
+                console.log(e);
+                //進行網頁初始化
+                //使用id選擇器參考按鈕物件 埋入click事件程序
+                //#idName
+                $('#btnToggle').click(
+                    function(){
+                        console.log('按鈕被觸發..');
+                        //開關操作說明
+                        $('#descr').slideToggle(400,
+                        //callback 回呼
+                        function(){
+                            console.log('完成了');
+                        }
+                        );
+                    }
+                );
+                //選擇查詢按鈕 進行對話盒呈現
+                $('#btnQuery').click(
+                    //事件程序
+                    function(){
+                        //reset
+                        app.isShow=false;
+                        //使用jQuery selector設定輸入國家別欄位為空內容
+                        $('#txtCountry').val('');
+                        app.result=[];
+                        $('#dialog').dialog(
+                            //設定參數 整個JavaScript物件
+                            {
+                                title:'客戶查詢-By Country',
+                                //強佔式Modal/Modaless
+                                modal:true,
+                                //設定按鈕
+                                buttons:[
+                                    {
+                                        text:'取消',
+                                        click:function()
+                                        {
+                                            //關閉對話盒
+                                            $('#dialog').dialog('close');
+
+                                        }
+                                    },
+                                    {
+                                        text:'查詢',
+                                        click:function(){
+                                            let count=$('#txtCountry').val();
+                                            //使用jQuery core非同步呼叫後端服務
+                                            //服務位址
+                                            let qryService='../../api/v1/customers/qry/'+count+'/rawdata';
+                                            console.log(qryService);
+                                            //進行非同步呼叫
+                                            $.ajax(
+                                                //settings 進行物件屬性設定 
+                                                {
+                                                    url:qryService,
+                                                    type:'GET', //請求方法
+                                                    //status 2xx
+                                                    success:function(result,status,xhr){
+                                                        console.log(result); //result就是data
+                                                        //指派給 Vue物件模組
+                                                        app.result=result;
+                                                        //關閉對話盒
+                                                        $('#dialog').dialog('close');
+                                                        app.isShow=true;
+
+                                                    },
+                                                    error:function(xhr,status,error){
+                                                        console.log(xhr); //XMLHttpRequest物件
+                                                        data=xhr.responseJSON;
+                                                        console.log(data);
+                                                        let msg=data.message;
+                                                        //使用SweetAlert2 對話盒
+                                                        Swal.fire(
+                                                            //JS物件
+                                                            {
+                                                                title:'訊息',
+                                                                text:msg,
+                                                                icon:'error'
+                                                            }
+                                                        );
+                                                    }
+                                                }
+                                            );
+                                        }
+                                    }
+                                ]
+                            }
+                        );
+                    }
+                );
+            }
+        );
+    </script>
+    <script>
+        //建構 Vue 物件
+        //物件模組
+        var dataModel={
+            country:'USA',
+            message:'', //查詢回應訊息
+            result:[] ,//查詢結果多客戶資料
+            isShow:false,
+            customers:{}
+        }
+        //事件模組
+        var functions={
+            btnEditHandler:function(e){
+                //console.log(e);
+                
+                app.customers=app.result[e.target.accessKey];
+                console.log(app.customers);
+            },
+            //刪除客戶資料 傳遞EventPoint整個資源
+            btnDelete:function(e){
+                //取得該按鈕accessKey儲存的相對紀錄順序
+                let index=e.target.accessKey;
+                //透過該順序取出陣列物件(Vue Model)相對的客戶物件
+                let customer=app.result[index];
+                //取出該物件的客戶編號
+                let custormerid=customer.customerId;
+                console.log(custormerid);
+                
+                Swal.fire(
+                    {
+                        title:'刪除作業',
+                        text:'是否確定刪除?',
+                        icon:'question',
+                        confirmButtonText:'刪除',
+                        showCancelButton:true,
+                        cancelButtonText:'取消'
+                    }
+
+                )
+                .then(
+                     //callback 事件 Lambda
+                     (result)=>{
+                        if(result.isConfirmed){
+                            //刪除作業
+                            //呼喚後端刪除客戶資料服務
+                            let deleteUrl='../../api/v1/customers/delete'
+                            //使用axios 採用Request method:DELETE
+                            axios.delete(deleteUrl,{
+                                params:{
+                                    cid:custormerid
+                                }
+                            })
+                            .then(
+                                //success callback(Http status 2xx)
+                                (resp)=>{
+                                    console.log(resp);
+                                    //呈現對話盒
+                                    let message=resp.data.message;
+                                    Swal.fire(
+                                        {
+                                            title:'訊息',
+                                            text:message,
+                                            icon:'info'
+                                        }
+                                    );
+                                    //前端UI同步移除相對記錄(客戶物件)
+                                    //陣列移除指定位置開始 移除幾個
+                                    app.result.splice(index,1);
+                                                           
+                                    //UI Re-Render
+                                    app.$forceUpdate();
+                                }
+                            )
+                            .catch(
+                                //status code 4xx or 5xx callback
+                                (resp)=>{
+                                    console.log(resp);
+                                    //呈現對話盒
+                                    let message=resp.response.data.message;
+                                    Swal.fire(
+                                        {
+                                            title:'訊息',
+                                            text:message,
+                                            icon:'error'
+                                        }
+                                    );
+                                }
+                            );
+                                    }
+                                }
+                            )
+                
+                
+                
+            }
+        }
+        var app = new Vue(
+            {
+                data:dataModel,
+                methods:functions,
+                delimiters:['{[',']}']//換一下前端Vue Expression符號
+            }
+        );
+        //掛載 app
+        app.$mount('#app');
+    </script>
+    
+</body>
+</html>

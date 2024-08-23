@@ -1,0 +1,10 @@
+{
+    "roles":["user","admin","operator"],
+    "rolesDescr":["一般使用者","管理者","系統操作者"],
+    "dbConfig":{
+        "serverName":"localhost",
+        "databaseName":"IOTDB",
+        "userName":"pyuser",
+        "password":"1221"
+    }
+}

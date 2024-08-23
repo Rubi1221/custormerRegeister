@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../wwwroot/js/vue.min.js"></script>
+    <script src="../../wwwroot/js/axios.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
+    <title>會員註冊系統</title>
+</head>
+<body>
+    <fieldset id =app>
+        <legend>會員註冊</legend>
+        <table>
+        <tr>
+            <td>使用者帳戶</td>
+            <td><input v-model:value="member.userName" type="text" required maxlength="50" id="txtUserName"class="form-control text-primary"/></td>
+        </tr>
+        <tr>
+            <td>使用者密碼</td>
+            <td><input v-model:value="member.password"type="password"class="form-control"/></td>
+        </tr>
+        <tr>
+            <td>真實姓名</td>
+            <td><input v-model:value="member.realName"type="text"class="form-control"/></td>
+        </tr>
+        <tr>
+            <td>EMAIL</td>
+            <td><input v-model="member.email"type="text"class="form-control"/></td>
+        </tr>
+        <tr>
+            <td>角色</td>
+            <td>
+            <select v-model:value="member.role">
+                {% for item in roles %}
+                <!--使用for loop內建順序屬性loop.index-->
+                <option value="{{item}}">{{descrs[loop.index-1]}}</option>
+                {% endfor %}
+            </select>
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td><button v-on:click="registerHandler">註冊</button></td>
+        </tr>
+        </table>
+        <div>輸入的內容: 姓名:{[member.userName]} 密碼:{[member.password]} 真實姓名:{[member.realName]} 角色:{[member.role]}</div>
+        <div>{[message]}</div>
+    </fieldset>
+    <script>
+        <!--什錦麵寫法(HTML vs JS vs Framework...形成亂葬崗)-->
+        function clickMe(){
+            //何謂DOM Document Object Model
+            let txtUserName=document.getElementById('txtUserName');
+            alert(txtUserName.value);
+        }
+        //設定資料模組 綁定畫面用的
+        var dataModel={
+            member:{userName:'',password:'',realName:'',email:'',role:''},
+            message:''
+        }
+        //事件程序或者功能模組
+        var functions={
+            registerHandler:function(){
+                //非同步呼喚後端服務 傳送一份json進行註冊
+                console.log('click....');
+                //使用axios post method進行呼喚後端服務
+                let addURL='../../api/v1/member/add'
+                let myHeader={"Content-Type":"application/json"}
+                //傳送上去的資料Json String(member序列化成Json String)
+                let jsonString=JSON.stringify(app.member);
+                //正式提出請求 採用非同步
+                axios.post(url=addURL,data=app.member,headers=myHeader)
+                .then(
+                    //Lambda Expression寫法
+                    (response)=>{
+                        console.log(response);
+                        let msg=response.data;
+                        //取出訊息 渲染畫面
+                        app.message=msg.msg;
+                    }
+                )  //後端處理成功之後 status 2xx
+                .catch(
+                    (error)=>{
+                        console.log(error);
+                        app.message=error.response.data.msg;
+                    }
+                ); //status 4xx or 5xx
+
+
+
+
+            }
+        }
+       
+        //Vue Instance 個體物件
+        var app=new Vue(
+            //建構初始化 不是參數 是採用物件模組
+            {
+                //換掉預設的運算式符號 因為後端jinja2 也是同樣運算式符號
+                delimiters:['{[',']}'],
+                //設定資料模組
+                data:dataModel,
+
+                methods:functions
+            }
+        );
+        //掛載Mounting 特定標籤範圍(DOM範圍) selector-#id
+        app.$mount('#app');
+    </script>
+
+    <!--使用MVVM Model View-ViewAndModel--VUE 2.6 畫面與資料進行Biding軟體工程-->
+</body>
+</html>
